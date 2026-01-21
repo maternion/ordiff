@@ -22,6 +22,9 @@ ordiff
 .ordiff.yaml
 ordiff.db
 
+# Development docs (internal)
+AGENTS.md
+
 # OS
 .DS_Store
 Thumbs.db

@@ -1,15 +1,56 @@
 # ordiff
 
-Compare GitHub releases with ease. CLI tool + MCP server.
+Compare GitHub releases with ease. ordiff caches releases, commits, PRs, and file changes locally, letting you track exactly what changed between any two releases without rate limits or API delays.
 
-## Features
+## Why ordiff?
 
-- **Index repositories**: Fetch all releases, commits, PRs and file changes
-- **Cache locally**: SQLite database for fast subsequent comparisons
-- **Smart caching**: Skips already-cached release pairs when re-indexing
-- **Compare releases**: See what changed between any two releases
-- **MCP server**: Run as MCP server for AI integration
-- **Async indexing**: MCP index operations run in background with progress tracking
+- **Local cache** - Fetch once, compare forever. No API rate limits after indexing.
+- **Track any repo** - Works with any public or private GitHub repository.
+- **Detailed comparisons** - See commits, PRs, and file changes with stats.
+- **AI-ready** - MCP server for integration with Claude, OpenCode, and other AI tools.
+- **Resumable indexing** - Smart caching skips already-indexed release pairs.
+
+## Quick Start
+
+```bash
+# Build
+git clone https://github.com/maternion/ordiff
+cd ordiff
+go build -o ordiff .
+
+# Index a repository
+./ordiff index ollama ollama
+
+# List releases
+./ordiff list
+
+# Compare two releases
+./ordiff compare v0.13.0 v0.14.0
+```
+
+## Example Output
+
+```
+=== v0.13.0 → v0.14.0 ===
+
+Commits: 47 | PRs: 12 | Files Changed: 28
+
+Top Changed Files:
+  +Add  -Del  File
+  ---- ----  ----
+   432    12  llama.go
+   156    89  api.go
+    78     3  main.go
+    45    120  utils.go
+    34     0  README.md
+
+Recent Commits:
+  a1b2c3d  Add GPU memory optimization for large models
+  d4e5f6g  Fix timeout handling in API endpoints
+  h8j9k0l  Update llama.go with new context handling
+  ...
+   ... and 44 more commits
+```
 
 ## Installation
 
@@ -19,78 +60,71 @@ cd ordiff
 go build -o ordiff .
 ```
 
-## Usage
+Or download a binary from the [releases page](https://github.com/maternion/ordiff/releases).
 
-### Index a repository
+## CLI Commands
+
+### index
+
+Index a repository to build the local cache.
 
 ```bash
+./ordiff index <owner> <repo>
+
+# Examples
 ./ordiff index ollama ollama
+./ordiff index kubernetes kubernetes
+./ordiff index vercel next.js
 ```
 
-### List releases
+### list
+
+List cached releases for the default repository.
 
 ```bash
-./ordiff list
-./ordiff list --json
+./ordiff list          # Human-readable output
+./ordiff list --json   # JSON output
 ```
 
-### Compare releases
+### compare
+
+Compare two releases.
 
 ```bash
+./ordiff compare <from> <to>
+
+# Examples
 ./ordiff compare v0.1.0 v0.2.0
-./ordiff compare v0.1.0 v0.2.0 --json
+./ordiff compare v0.13.0 v0.14.0
 ./ordiff compare abc123 def456  # by commit SHA
+./ordiff compare v0.1.0 v0.2.0 --json
 ```
 
-### Run as MCP server
+### mcp
+
+Run as an MCP server for AI integration.
 
 ```bash
 ./ordiff mcp
 ```
 
-## MCP Tools
+## MCP Server
 
-When running as MCP server, ordiff exposes 4 tools.
+ordiff works as a Model Context Protocol server, enabling AI assistants to index and compare releases.
 
-### index_repo
+### Available Tools
 
-Index a GitHub repository's releases and commits for caching.
+| Tool | Description |
+|------|-------------|
+| `index_repo` | Index a repository (async, use `get_index_status` to track) |
+| `get_index_status` | Check indexing progress |
+| `list_releases` | List cached releases |
+| `compare_releases` | Compare two releases |
+| `summarize_data` | Get structured JSON for AI summarization |
 
-Arguments:
-- `owner`: Repository owner (e.g., "ollama")
-- `repo`: Repository name (e.g., "ollama")
+### opencode Configuration
 
-Runs asynchronously. Use `get_index_status` to check progress.
-
-### get_index_status
-
-Get the status of the current indexing operation.
-
-Returns progress percentage, processed/skipped counts, and any errors.
-
-### list_releases
-
-List all cached releases for the default repository.
-
-### compare_releases
-
-Compare two releases and get detailed change information.
-
-Arguments:
-- `from`: Older release tag or commit SHA
-- `to`: Newer release tag or commit SHA
-
-### summarize_data
-
-Get structured JSON data about release changes for AI summarization.
-
-Arguments:
-- `from`: Older release tag or commit SHA
-- `to`: Newer release tag or commit SHA
-
-## opencode Configuration
-
-Add to your `~/.config/opencode/opencode.jsonc`:
+Add to `~/.config/opencode/opencode.jsonc`:
 
 ```json
 {
@@ -106,9 +140,9 @@ Add to your `~/.config/opencode/opencode.jsonc`:
 }
 ```
 
-## Claude Desktop Configuration
+### Claude Desktop Configuration
 
-Add to your `~/.config/claude/claude_desktop_config.json`:
+Add to `~/.config/claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -123,7 +157,7 @@ Add to your `~/.config/claude/claude_desktop_config.json`:
 
 ## Configuration
 
-Default repository is stored in `.ordiff.yaml` after first index:
+After the first index, a `.ordiff.yaml` file stores the default repository:
 
 ```yaml
 default_owner: ollama
@@ -132,22 +166,50 @@ default_repo: ollama
 
 ## Environment Variables
 
-- `GITHUB_TOKEN`: GitHub personal access token (optional, for higher rate limits)
+- `GITHUB_TOKEN`: GitHub personal access token (optional, increases rate limit from 60 to 5000 requests/hour)
 
-## Smart Caching
+## How It Works
 
-When re-indexing a repository, ordiff skips release pairs that are already cached:
+1. **Index** - ordiff fetches all releases, then walks through consecutive release pairs to fetch commits and file changes.
+2. **Cache** - Everything is stored in a local SQLite database (`ordiff.db`).
+3. **Compare** - Query the cache for detailed diffs between any two releases.
+
+### Smart Caching
+
+When re-indexing, ordiff skips release pairs already in the cache:
 
 ```
-Processing 0.9.0 -> 0.10.0 (1/169, 0 skipped)
-Skipping 0.8.0 -> 0.9.0 (already cached)
-Processing 0.7.0 -> 0.8.0 (2/169, 1 skipped)
+Processing 0.9.0 → 0.10.0 (1/169, 0 skipped)
+Skipping 0.8.0 → 0.9.0 (already cached)
+Processing 0.7.0 → 0.8.0 (2/169, 1 skipped)
 ```
 
-This allows:
-- Resuming interrupted indexing
-- Adding new releases without re-fetching old data
-- Faster subsequent indexing runs
+This means:
+- Interrupted indexing resumes where it left off
+- New releases only fetch the new pairs
+- Subsequent indexing is nearly instant
+
+## Use Cases
+
+- **Debug release issues** - See exactly what changed in a problematic release
+- **Audit trails** - Track changes across versions for compliance
+- **Changelog generation** - Extract commit summaries between releases
+- **Large repo monitoring** - Track changes in repos with many releases
+
+## Project Structure
+
+```
+ordiff/
+├── main.go              # Entry point
+├── cmd/
+│   ├── cli/             # CLI commands (index, list, compare)
+│   └── mcp/             # MCP server
+├── internal/
+│   ├── cache/           # SQLite database
+│   └── github/          # GitHub API client
+├── .ordiff.yaml         # Config file
+└── ordiff.db            # SQLite cache
+```
 
 ## License
 

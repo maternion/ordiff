@@ -141,7 +141,6 @@ default_repo: ollama
 ## Environment Variables
 
 - `GITHUB_TOKEN`: GitHub personal access token (optional, for higher rate limits)
-- `OLLAMA_HOST`: Ollama server URL (not used directly, for reference only)
 
 ## Smart Caching
 

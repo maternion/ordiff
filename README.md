@@ -22,17 +22,20 @@ go build -o ordiff .
 ## Usage
 
 ### Index a repository
+
 ```bash
 ./ordiff index ollama ollama
 ```
 
 ### List releases
+
 ```bash
 ./ordiff list
 ./ordiff list --json
 ```
 
 ### Compare releases
+
 ```bash
 ./ordiff compare v0.1.0 v0.2.0
 ./ordiff compare v0.1.0 v0.2.0 --json
@@ -40,61 +43,50 @@ go build -o ordiff .
 ```
 
 ### Run as MCP server
+
 ```bash
 ./ordiff mcp
 ```
 
 ## MCP Tools
 
-When running as MCP server, ordiff exposes 4 tools:
+When running as MCP server, ordiff exposes 4 tools.
 
 ### index_repo
+
 Index a GitHub repository's releases and commits for caching.
 
-```json
-{
-  "owner": "ollama",
-  "repo": "ollama"
-}
-```
+Arguments:
+- `owner`: Repository owner (e.g., "ollama")
+- `repo`: Repository name (e.g., "ollama")
 
 Runs asynchronously. Use `get_index_status` to check progress.
 
 ### get_index_status
-Get the status of the current indexing operation.
 
-```json
-{}
-```
+Get the status of the current indexing operation.
 
 Returns progress percentage, processed/skipped counts, and any errors.
 
 ### list_releases
+
 List all cached releases for the default repository.
 
-```json
-{}
-```
-
 ### compare_releases
+
 Compare two releases and get detailed change information.
 
-```json
-{
-  "from": "v0.1.0",
-  "to": "v0.2.0"
-}
-```
+Arguments:
+- `from`: Older release tag or commit SHA
+- `to`: Newer release tag or commit SHA
 
 ### summarize_data
+
 Get structured JSON data about release changes for AI summarization.
 
-```json
-{
-  "from": "v0.1.0",
-  "to": "v0.2.0"
-}
-```
+Arguments:
+- `from`: Older release tag or commit SHA
+- `to`: Newer release tag or commit SHA
 
 ## opencode Configuration
 

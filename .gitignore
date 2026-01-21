@@ -1,0 +1,30 @@
+# Binaries
+ordiff
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go coverage
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local config
+.ordiff.yaml
+ordiff.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

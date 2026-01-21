@@ -1,4 +1,4 @@
-# ordiff
+# ordiff - MCP + CLI
 
 Compare GitHub releases with ease. ordiff caches releases, commits, PRs, and file changes locally, letting you track exactly what changed between any two releases without rate limits or API delays.
 
